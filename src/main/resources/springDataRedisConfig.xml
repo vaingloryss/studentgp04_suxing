@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--配置Redis连接池-->
+    <bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">
+        <!--最多空闲连接数-->
+        <property name="maxIdle" value="1"/>
+        <!--最少空闲连接数-->
+        <property name="minIdle" value="1"/>
+        <!--连接池中的总连接数-->
+        <property name="maxTotal" value="5"/>
+        <!--连接用完时，是否阻塞，阻塞超过maxWaitMillis会抛出异常-->
+        <property name="blockWhenExhausted" value="true"/>
+        <!--检出连接时的最大等待时长-->
+        <property name="maxWaitMillis" value="30000"/>
+        <!--检出连接时是否检测-->
+        <property name="testOnBorrow" value="false"/>
+        <!--空闲时是否检测连接是否可用-->
+        <property name="testWhileIdle" value="false"/>
+        <!--Evict=驱逐 连接至少要空闲多长时间才会成为可以被驱逐线程扫描并移除-->
+        <property name="minEvictableIdleTimeMillis" value="60000"/>
+        <!--驱逐线程 两次驱逐之间要sleep的时间，如果小于0，则不会有驱逐线程，则minEvictableIdleTimeMillis配置无效-->
+        <property name="timeBetweenEvictionRunsMillis" value="30000"/>
+        <!--驱逐线程最多扫描几个连接-->
+        <property name="numTestsPerEvictionRun" value="3"/>
+        <!--last in first out 检出策略 后进先出或先进先出-->
+        <property name="lifo" value="true"/>
+    </bean>
+    <!--配置连接Factory-->
+    <bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
+        <!--Redis地址-->
+        <property name="hostName" value="192.168.193.129"/>
+        <property name="port" value="8000"/>
+        <!--连接池配置信息-->
+        <property name="poolConfig" ref="jedisPoolConfig"/>
+    </bean>
+    <!--
+    声明SpringDataRedis序列化组件
+    如果没有配置序列化方式，会使用默认的序列化方式：defaultSerializer
+    -->
+    <!--springDataRedis序列化组件-->
+    <bean id="stringSer" class="org.springframework.data.redis.serializer.StringRedisSerializer"/>
+    <!--Jackson序列化组件-->
+    <bean id="jacksonSer" class="org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer"/>
+    <!--FastJson序列化-->
+    <bean id="fastJsonSer" class="com.alibaba.fastjson.support.spring.GenericFastJsonRedisSerializer"/>
+    <!--JDK序列化-->
+    <bean id="jdkSer" class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer"/>
+    <!--RedisTemplate：核心组件-->
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate"
+          p:connectionFactory-ref="jedisConnectionFactory"
+          p:stringSerializer-ref="stringSer"
+          p:keySerializer-ref="stringSer"
+          p:valueSerializer-ref="jdkSer"
+          p:hashKeySerializer-ref="stringSer"
+          p:hashValueSerializer-ref="fastJsonSer"/>
+
+    <bean id="stringRedisTemplate" class="org.springframework.data.redis.core.StringRedisTemplate">
+        <property name="connectionFactory" ref="jedisConnectionFactory"/>
+    </bean>
+</beans>
